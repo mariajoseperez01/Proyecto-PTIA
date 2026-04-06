@@ -17,6 +17,14 @@ def initialize_database(force_reload: bool = False) -> None:
     if DB_PATH.exists() and not force_reload:
         return
 
+    missing = [p for p in (MOVIES_PATH, CREDITS_PATH) if not p.is_file()]
+    if missing:
+        names = ", ".join(p.name for p in missing)
+        raise FileNotFoundError(
+            f"No se encontraron los CSV necesarios en {BASE_DIR}: {names}. "
+            "Coloca tmdb_5000_movies.csv y tmdb_5000_credits.csv en la raíz del proyecto."
+        )
+
     movies = pd.read_csv(MOVIES_PATH)
     credits = pd.read_csv(CREDITS_PATH)
 

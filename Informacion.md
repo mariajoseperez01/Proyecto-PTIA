@@ -297,14 +297,14 @@ La solución opera en tres capas interconectadas:
 •	Capa de Lógica (Middleware): Transformación de texto a vectores y ejecución del motor matemático.
 •	Capa de Presentación: Interfaz que recibe la consulta y despliega el ranking de afinidad.
 
-Interfaz Preliminar
-Como parte de la validación del proyecto, se propone una versión preliminar de la interfaz, creada para probar conceptos y verificar requisitos funcionales antes del desarrollo completo del prototipo.
+Interfaz de usuario (aplicación web)
+La capa de presentación se implementa como una aplicación web con **Streamlit** (`app.py`), conectada al repositorio local (SQLite generado desde los CSV TMDB) y al motor de recomendación en tiempo de ejecución.
 
 Características principales:
-•		Permite validar la experiencia de usuario.
-•		Es navegable y fácil de explorar.
-•		Incluye simulaciones de funciones que aún no han sido implementadas.
-•		Sirve como base para futuras mejoras y para la evaluación hacia un prototipo funcional.
+•		Consulta por título del catálogo o por fragmento de texto, con actualización explícita de resultados.
+•		Visualización del ranking de películas similares con similitud del coseno, nota media TMDB, fecha de estreno, tagline y resumen.
+•		Recarga de la base de datos desde los CSV y reconstrucción del modelo desde la barra lateral.
+•		Avisos claros cuando no hay coincidencia de título o la consulta está vacía (listado por defecto del catálogo).
 
 Componente Principal: Motor de Vectorización y Similitud
 Es el Núcleo Inteligente del proyecto. Su función es realizar la Abstracción del Conocimiento, mapeando características textuales a coordenadas espaciales. Este componente es el responsable de convertir el lenguaje humano en vectores matemáticos comparables, permitiendo que la máquina "entienda" la esencia de una película por encima de su descripción literal.
