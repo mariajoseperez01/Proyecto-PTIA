@@ -13,17 +13,17 @@ class TestRecommend(unittest.TestCase):
     def setUpClass(cls) -> None:
         initialize_database(force_reload=False)
         enriched = load_enriched_movies()
-        cls.movies, cls.similarity = build_model(enriched)
+        cls.movies, cls.item_vectors = build_model(enriched)
 
     def test_no_match_returns_notice(self) -> None:
-        df, notice = recommend("___titulo_inexistente_xyz___", self.movies, self.similarity, top_n=3)
+        df, notice = recommend("___titulo_inexistente_xyz___", self.movies, self.item_vectors, top_n=3)
         self.assertIsNotNone(notice)
         self.assertIn("No se encontró", notice)
         self.assertEqual(len(df), 3)
         self.assertTrue((df["score"] == 1.0).all())
 
     def test_match_returns_no_notice(self) -> None:
-        df, notice = recommend("Avatar", self.movies, self.similarity, top_n=3)
+        df, notice = recommend("Avatar", self.movies, self.item_vectors, top_n=3)
         self.assertIsNone(notice)
         self.assertEqual(len(df), 3)
         self.assertTrue((df["score"] != 1.0).any() or len(df) == 0)

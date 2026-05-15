@@ -2,6 +2,9 @@
 .venv/
 venv/
 env/
+# Secretos locales (API keys, etc.)
+.env
+.env.local
 .env/
 
 # Python

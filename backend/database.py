@@ -12,9 +12,39 @@ MOVIES_PATH = BASE_DIR / "tmdb_5000_movies.csv"
 CREDITS_PATH = BASE_DIR / "tmdb_5000_credits.csv"
 
 
+def ensure_poster_path_column(conn: sqlite3.Connection) -> None:
+    """Columna opcional en movies (p. ej. si el CSV trae poster_path)."""
+    cur = conn.execute("PRAGMA table_info(movies)")
+    cols = {row[1] for row in cur.fetchall()}
+    if "poster_path" not in cols:
+        conn.execute("ALTER TABLE movies ADD COLUMN poster_path TEXT")
+    conn.commit()
+
+
+def ensure_poster_cache_table(conn: sqlite3.Connection) -> None:
+    """Caché persistente de carátulas vía API TMDB (sobrevive a recargar CSV)."""
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS tmdb_poster_cache (
+            movie_id INTEGER PRIMARY KEY,
+            poster_path TEXT NOT NULL,
+            updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+        """
+    )
+    conn.commit()
+
+
+def ensure_schema(conn: sqlite3.Connection) -> None:
+    ensure_poster_path_column(conn)
+    ensure_poster_cache_table(conn)
+
+
 def initialize_database(force_reload: bool = False) -> None:
     """Create and populate SQLite database from CSV files."""
     if DB_PATH.exists() and not force_reload:
+        with sqlite3.connect(DB_PATH) as conn:
+            ensure_schema(conn)
         return
 
     missing = [p for p in (MOVIES_PATH, CREDITS_PATH) if not p.is_file()]
@@ -31,6 +61,7 @@ def initialize_database(force_reload: bool = False) -> None:
     with sqlite3.connect(DB_PATH) as conn:
         movies.to_sql("movies", conn, if_exists="replace", index=False)
         credits.to_sql("credits", conn, if_exists="replace", index=False)
+        ensure_schema(conn)
 
 
 def load_enriched_movies() -> pd.DataFrame:
@@ -47,15 +78,23 @@ def load_enriched_movies() -> pd.DataFrame:
             c.crew,
             m.release_date,
             m.vote_average,
-            m.popularity
+            m.popularity,
+            COALESCE(
+                NULLIF(TRIM(COALESCE(m.poster_path, '')), ''),
+                pc.poster_path
+            ) AS poster_path
         FROM movies m
         INNER JOIN credits c ON m.id = c.movie_id
+        LEFT JOIN tmdb_poster_cache pc ON m.id = pc.movie_id
     """
 
     with sqlite3.connect(DB_PATH) as conn:
+        ensure_schema(conn)
         movies = pd.read_sql_query(query, conn)
 
     for column in ["overview", "genres", "keywords", "tagline", "cast", "crew", "title"]:
         movies[column] = movies[column].fillna("")
+    if "poster_path" in movies.columns:
+        movies["poster_path"] = movies["poster_path"].fillna("").astype(str).replace("nan", "")
 
     return movies
